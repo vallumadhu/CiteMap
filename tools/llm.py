@@ -31,12 +31,7 @@ def explain_paper(text):
     return call_llm(messages, temperature=0.3)
 
 
-def ChatBot(
-    prompt,
-    system_prompt,
-    conversation_history=None,
-    context=None
-):
+def ChatBot(prompt,system_prompt,conversation_history=None,context=None):
     if conversation_history is None:
         conversation_history = []
 
