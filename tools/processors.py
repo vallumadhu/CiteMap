@@ -39,3 +39,14 @@ def parse_arxiv_id(text):
             results.append(arxiv_id)
 
     return results
+
+def get_paper_id_from_input(input_value):
+    
+    input_value = input_value.strip()
+    
+    if input_value.startswith("http"):
+        paper_id = input_value.split("/pdf/")[-1].replace(".pdf", "").split("v")[0]
+    else:
+        paper_id = input_value.split("v")[0]
+    
+    return paper_id

@@ -1,6 +1,7 @@
 import requests,os
 import uuid
 from tools.processors import parse_arxiv_id
+from config import PAPER_DIR
 import fitz
 
 
@@ -12,11 +13,12 @@ def download_paper(url,name=None):
 
     response = requests.get(url)
     
-    os.makedirs("../data/papers", exist_ok=True)
-    with open(f"../data/papers/{name}.pdf","wb") as f:
+    os.makedirs(PAPER_DIR, exist_ok=True)
+    with open(f"{PAPER_DIR}/{name}.pdf","wb") as f:
         f.write(response.content)
-
-    return f"../data/papers/{name}.pdf"
+    
+    print(f"Downloaded paper to {PAPER_DIR}/{name}.pdf")
+    return f"{PAPER_DIR}/{name}.pdf"
 
 def pdf2text(pdf_path):
     pdf = fitz.open(pdf_path)
@@ -42,27 +44,49 @@ def extract_reference_section(text):
 
 
 
-def crawl_paper(url, name=None, crawl_depth=1):
+def crawl_paper(url, name=None, crawl_depth=1, visited=None):
+
+    if visited is None:
+        visited = set()
+
     data = []
 
+    paper_id = url.split("/")[-1].replace(".pdf", "")
+
+    if paper_id in visited:
+        return data
+
+    visited.add(paper_id)
+
     downloaded_path = download_paper(url, name)
+
     text = pdf2text(downloaded_path)
-    data.append(text)
+
+    data.append({
+        "paper_id": paper_id,
+        "paper_name": name if name else paper_id,
+        "text": text
+    })
 
     if crawl_depth == 0:
         return data
 
     ref_section = extract_reference_section(text)
-    if ref_section is None:
 
+    if ref_section is None:
         return data
 
     arxiv_ids = parse_arxiv_id(ref_section)
 
     for arxiv_id in arxiv_ids:
+
         pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
 
-        child_data = crawl_paper(pdf_url, crawl_depth=crawl_depth - 1)
+        child_data = crawl_paper(
+            pdf_url,
+            crawl_depth=crawl_depth - 1,
+            visited=visited
+        )
         data.extend(child_data)
 
     return data
